@@ -1,0 +1,1280 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <title></title>
+<style id="system" type="text/css">h1,h2,h3,h4,h5,h6,p,blockquote {    margin: 0;    padding: 0;}body {    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;    font-size: 13px;    line-height: 18px;    color: #737373;    margin: 10px 13px 10px 13px;}a {    color: #0069d6;}a:hover {    color: #0050a3;    text-decoration: none;}a img {    border: none;}p {    margin-bottom: 9px;}h1,h2,h3,h4,h5,h6 {    color: #404040;    line-height: 36px;}h1 {    margin-bottom: 18px;    font-size: 30px;}h2 {    font-size: 24px;}h3 {    font-size: 18px;}h4 {    font-size: 16px;}h5 {    font-size: 14px;}h6 {    font-size: 13px;}hr {    margin: 0 0 19px;    border: 0;    border-bottom: 1px solid #ccc;}blockquote {    padding: 13px 13px 21px 15px;    margin-bottom: 18px;    font-family:georgia,serif;    font-style: italic;}blockquote:before {    content:"C";    font-size:40px;    margin-left:-10px;    font-family:georgia,serif;    color:#eee;}blockquote p {    font-size: 14px;    font-weight: 300;    line-height: 18px;    margin-bottom: 0;    font-style: italic;}code, pre {    font-family: Monaco, Andale Mono, Courier New, monospace;}code {    background-color: #fee9cc;    color: rgba(0, 0, 0, 0.75);    padding: 1px 3px;    font-size: 12px;    -webkit-border-radius: 3px;    -moz-border-radius: 3px;    border-radius: 3px;}pre {    display: block;    padding: 14px;    margin: 0 0 18px;    line-height: 16px;    font-size: 11px;    border: 1px solid #d9d9d9;    white-space: pre-wrap;    word-wrap: break-word;}pre code {    background-color: #fff;    color:#737373;    font-size: 11px;    padding: 0;}@media screen and (min-width: 768px) {    body {        width: 748px;        margin:10px auto;    }}</style><style id="custom" type="text/css"></style></head>
+<body marginheight="0"><h1>0.学习目标</h1>
+<ul>
+<li>独立创建用户中心</li>
+<li>了解面向接口开发方式</li>
+<li>实现数据校验功能</li>
+<li>实现短信发送功能</li>
+<li>实现注册功能</li>
+<li>实现根据用户名和密码查询用户功能</li>
+</ul>
+<h1>1.创建用户中心</h1>
+<p>用户搜索到自己心仪的商品，接下来就要去购买，但是购买必须先登录。所以接下来我们编写用户中心，实现用户的登录和注册功能。
+
+</p>
+<p>用户中心的提供的服务：
+
+</p>
+<ul>
+<li>用户的注册</li>
+<li>用户登录</li>
+<li>用户个人信息管理</li>
+<li>用户地址管理</li>
+<li>用户收藏管理</li>
+<li>我的订单</li>
+<li>优惠券管理</li>
+</ul>
+<p>这里我们暂时先实现基本的：<code>注册和登录</code>功能，其它功能大家可以自行补充完整。
+
+</p>
+<p>因为用户中心的服务其它微服务也会调用，因此这里我们做聚合。
+
+</p>
+<p>leyou-user：父工程，包含2个子工程：
+- leyou-user-interface：实体及接口
+- leyou-user-service：业务和服务
+
+
+
+</p>
+<h2>1.1.创建父module</h2>
+<p>创建
+
+</p>
+<p><img src="assets/1532778843008.png" alt="1532778843008">
+
+</p>
+<p>位置：
+
+</p>
+<p><img src="assets/1532778910920.png" alt="1532778910920">
+
+
+
+</p>
+<h2>1.2.创建leyou-user-interface</h2>
+<p>在leyou-user下，创建module：
+
+</p>
+<p><img src="assets/1532779001951.png" alt="1532779001951">
+
+</p>
+<p><img src="assets/1532779042843.png" alt="1532779042843">
+
+</p>
+<p>pom：
+
+</p>
+<pre><code class="lang-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;parent&gt;
+        &lt;artifactId&gt;leyou-user&lt;/artifactId&gt;
+        &lt;groupId&gt;com.leyou.user&lt;/groupId&gt;
+        &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+    &lt;/parent&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.leyou.user&lt;/groupId&gt;
+    &lt;artifactId&gt;leyou-user-interface&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+
+
+&lt;/project&gt;</code></pre>
+<h2>1.3.创建leyou-user-service</h2>
+<p>创建module
+
+</p>
+<p><img src="assets/1532779120507.png" alt="1532779120507">
+
+</p>
+<p><img src="assets/1532779166910.png" alt="1532779166910">
+
+</p>
+<p>pom
+
+</p>
+<pre><code class="lang-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;parent&gt;
+        &lt;artifactId&gt;leyou-user&lt;/artifactId&gt;
+        &lt;groupId&gt;com.leyou.user&lt;/groupId&gt;
+        &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+    &lt;/parent&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.leyou.user&lt;/groupId&gt;
+    &lt;artifactId&gt;leyou-user-service&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-cloud-starter-netflix-eureka-client&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-jdbc&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;!-- mybatis启动器 --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.mybatis.spring.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;mybatis-spring-boot-starter&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;!-- 通用Mapper启动器 --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;tk.mybatis&lt;/groupId&gt;
+            &lt;artifactId&gt;mapper-spring-boot-starter&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;!-- mysql驱动 --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;mysql&lt;/groupId&gt;
+            &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.leyou.user&lt;/groupId&gt;
+            &lt;artifactId&gt;leyou-user-interface&lt;/artifactId&gt;
+            &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+
+&lt;/project&gt;</code></pre>
+<p>启动类
+
+</p>
+<pre><code class="lang-java">@SpringBootApplication
+@EnableDiscoveryClient
+@MapperScan("com.leyou.user.mapper")
+public class LeyouUserApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(LeyouUserApplication.class, args);
+    }
+}</code></pre>
+<p>配置：
+
+</p>
+<pre><code class="lang-yaml">server:
+  port: 8085
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/leyou
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:10086/eureka
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    instance-id: ${eureka.instance.ip-address}.${server.port}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+
+mybatis:
+  type-aliases-package: com.leyou.user.pojo</code></pre>
+<p>父工程leyou-user的pom：
+
+</p>
+<pre><code class="lang-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;parent&gt;
+        &lt;artifactId&gt;leyou&lt;/artifactId&gt;
+        &lt;groupId&gt;com.leyou.parent&lt;/groupId&gt;
+        &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+    &lt;/parent&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.leyou.user&lt;/groupId&gt;
+    &lt;artifactId&gt;leyou-user&lt;/artifactId&gt;
+    &lt;packaging&gt;pom&lt;/packaging&gt;
+    &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+    &lt;modules&gt;
+        &lt;module&gt;leyou-user-interface&lt;/module&gt;
+        &lt;module&gt;leyou-user-service&lt;/module&gt;
+    &lt;/modules&gt;
+
+&lt;/project&gt;</code></pre>
+<h2>1.4.添加网关路由</h2>
+<p>我们修改<code>leyou-gateway</code>，添加路由规则，对<code>leyou-user-service</code>进行路由:
+
+</p>
+<p><img src="assets/1532779772325.png" alt="1532779772325">
+
+
+
+</p>
+<h1>2.后台功能准备</h1>
+<h2>2.1.接口文档</h2>
+<p>整个用户中心的开发，我们将模拟公司内面向接口的开发。
+
+</p>
+<p>现在假设项目经理已经设计好了接口文档，详见：《用户中心接口说明.md》
+
+</p>
+<p><img src="assets/1527174356711.png" alt="1527174356711">
+
+</p>
+<p>我们将根据文档直接编写后台功能，不关心页面实现。
+
+
+
+</p>
+<h2>2.2.数据结构</h2>
+<pre><code class="lang-mysql">CREATE TABLE `tb_user` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL COMMENT '用户名',
+  `password` varchar(32) NOT NULL COMMENT '密码，加密存储',
+  `phone` varchar(20) DEFAULT NULL COMMENT '注册手机号',
+  `created` datetime NOT NULL COMMENT '创建时间',
+  `salt` varchar(32) NOT NULL COMMENT '密码加密的salt值',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8 COMMENT='用户表';</code></pre>
+<p>数据结构比较简单，因为根据用户名查询的频率较高，所以我们给用户名创建了索引
+
+
+
+</p>
+<h2>2.3.基本代码</h2>
+<p> <img src="assets/1532781014342.png" alt="1532781014342">
+
+</p>
+<h3>2.3.1.实体类</h3>
+<pre><code class="lang-java">@Table(name = "tb_user")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String username;// 用户名
+
+    @JsonIgnore
+    private String password;// 密码
+
+    private String phone;// 电话
+
+    private Date created;// 创建时间
+
+    @JsonIgnore
+    private String salt;// 密码的盐值
+}</code></pre>
+<p>注意：为了安全考虑。这里对password和salt添加了注解@JsonIgnore，这样在json序列化时，就不会把password和salt返回。
+
+
+
+</p>
+<h3>2.3.2.mapper</h3>
+<pre><code class="lang-java">public interface UserMapper extends Mapper&lt;User&gt; {
+}</code></pre>
+<h3>2.3.3.Service</h3>
+<pre><code class="lang-java">@Service
+public class UserService {
+
+    @Autowired
+    private UserMapper userMapper;
+}</code></pre>
+<h3>2.3.4.controller</h3>
+<pre><code class="lang-java">@Controller
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+}</code></pre>
+<h1>3.数据验证功能</h1>
+<h2>3.1.接口说明</h2>
+<p>实现用户数据的校验，主要包括对：手机号、用户名的唯一性校验。
+
+</p>
+<p><strong>接口路径：</strong>
+
+</p>
+<pre><code>GET /check/{data}/{type}</code></pre>
+<p><strong>参数说明：</strong>
+
+</p>
+<p>| 参数 | 说明                                   | 是否必须 | 数据类型 | 默认值 |
+| ---- | -------------------------------------- | -------- | -------- | ------ |
+| data | 要校验的数据                           | 是       | String   | 无     |
+| type | 要校验的数据类型：1，用户名；2，手机； | 否       | Integer  | 1      |
+
+</p>
+<p><strong>返回结果：</strong>
+
+</p>
+<p>返回布尔类型结果：
+
+</p>
+<ul>
+<li>true：可用</li>
+<li>false：不可用</li>
+</ul>
+<p>状态码：
+
+</p>
+<ul>
+<li>200：校验成功</li>
+<li>400：参数有误</li>
+<li>500：服务器内部异常</li>
+</ul>
+<h2>3.2.controller</h2>
+<p>因为有了接口，我们可以不关心页面，所有需要的东西都一清二楚：
+
+</p>
+<ul>
+<li>请求方式：GET</li>
+<li>请求路径：/check/{param}/{type}</li>
+<li>请求参数：param,type</li>
+<li>返回结果：true或false</li>
+</ul>
+<pre><code class="lang-java">/**
+  * 校验数据是否可用
+  * @param data
+  * @param type
+  * @return
+  */
+@GetMapping("check/{data}/{type}")
+public ResponseEntity&lt;Boolean&gt; checkUserData(@PathVariable("data") String data, @PathVariable(value = "type", defaultValue="1") Integer type) {
+    Boolean boo = this.userService.checkData(data, type);
+    if (boo == null) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    }
+    return ResponseEntity.ok(boo);
+}</code></pre>
+<h2>3.3.Service</h2>
+<pre><code class="lang-java">public Boolean checkData(String data, Integer type) {
+    User record = new User();
+    switch (type) {
+        case 1:
+            record.setUsername(data);
+            break;
+        case 2:
+            record.setPhone(data);
+            break;
+        default:
+            return null;
+    }
+    return this.userMapper.selectCount(record) == 0;
+}</code></pre>
+<h2>3.4.测试</h2>
+<p>我们在数据库插入一条假数据：
+
+</p>
+<p><img src="assets/1532781696303.png" alt="1532781696303">
+
+</p>
+<p>然后在浏览器调用接口，测试：
+
+</p>
+<p><img src="assets/1532781679924.png" alt="1532781679924">
+
+</p>
+<p><img src="assets/1532781726835.png" alt="1532781726835">
+
+
+
+</p>
+<h1>4.阿里大于短信服务</h1>
+<h2>4.1.demo</h2>
+<p>注册页面上有短信发送的按钮，当用户点击发送短信，我们需要生成验证码，发送给用户。我们将使用阿里提供的阿里大于来实现短信发送。
+
+</p>
+<p>参考课前资料的《阿里短信.md》学习demo入门
+
+
+
+</p>
+<h2>4.2.创建短信微服务</h2>
+<p>因为系统中不止注册一个地方需要短信发送，因此我们将短信发送抽取为微服务：<code>leyou-sms-service</code>，凡是需要的地方都可以使用。
+
+</p>
+<p>另外，因为短信发送API调用时长的不确定性，为了提高程序的响应速度，短信发送我们都将采用异步发送方式，即：
+
+</p>
+<ul>
+<li>短信服务监听MQ消息，收到消息后发送短信。</li>
+<li>其它服务要发送短信时，通过MQ通知短信微服务。</li>
+</ul>
+<h3>4.2.1.创建module</h3>
+<p><img src="assets/1532786840913.png" alt="1532786840913">
+
+</p>
+<p><img src="assets/1532786877872.png" alt="1532786877872">
+
+
+
+</p>
+<h3>4.2.2.pom</h3>
+<pre><code class="lang-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;parent&gt;
+        &lt;artifactId&gt;leyou&lt;/artifactId&gt;
+        &lt;groupId&gt;com.leyou.parent&lt;/groupId&gt;
+        &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+    &lt;/parent&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.leyou.sms&lt;/groupId&gt;
+    &lt;artifactId&gt;leyou-sms-service&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-amqp&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.aliyun&lt;/groupId&gt;
+            &lt;artifactId&gt;aliyun-java-sdk-core&lt;/artifactId&gt;
+            &lt;version&gt;3.3.1&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.aliyun&lt;/groupId&gt;
+            &lt;artifactId&gt;aliyun-java-sdk-dysmsapi&lt;/artifactId&gt;
+            &lt;version&gt;1.0.0&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/project&gt;</code></pre>
+<h3>4.2.3.编写启动类</h3>
+<pre><code class="lang-java">@SpringBootApplication
+public class LeyouSmsApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(LeyouSmsApplication.class, args);
+    }
+}</code></pre>
+<h3>4.2.4.编写application.yml</h3>
+<pre><code class="lang-yaml">server:
+  port: 8086
+spring:
+  application:
+    name: sms-service
+  rabbitmq:
+    host: 192.168.56.101
+    username: leyou
+    password: leyou
+    virtual-host: /leyou</code></pre>
+<h2>4.3.编写短信工具类</h2>
+<h3>4.3.1.属性抽取</h3>
+<p>我们首先把一些常量抽取到application.yml中：
+
+</p>
+<pre><code class="lang-yaml">leyou:
+  sms:
+    accessKeyId: JWffwFJIwada # 你自己的accessKeyId
+    accessKeySecret: aySRliswq8fe7rF9gQyy1Izz4MQ # 你自己的AccessKeySecret
+    signName: 乐优商城 # 签名名称
+    verifyCodeTemplate: SMS_133976814 # 模板名称</code></pre>
+<p>然后注入到属性类中：
+
+</p>
+<pre><code class="lang-java">@ConfigurationProperties(prefix = "leyou.sms")
+public class SmsProperties {
+
+    String accessKeyId;
+
+    String accessKeySecret;
+
+    String signName;
+
+    String verifyCodeTemplate;
+
+    public String getAccessKeyId() {
+        return accessKeyId;
+    }
+
+    public void setAccessKeyId(String accessKeyId) {
+        this.accessKeyId = accessKeyId;
+    }
+
+    public String getAccessKeySecret() {
+        return accessKeySecret;
+    }
+
+    public void setAccessKeySecret(String accessKeySecret) {
+        this.accessKeySecret = accessKeySecret;
+    }
+
+    public String getSignName() {
+        return signName;
+    }
+
+    public void setSignName(String signName) {
+        this.signName = signName;
+    }
+
+    public String getVerifyCodeTemplate() {
+        return verifyCodeTemplate;
+    }
+
+    public void setVerifyCodeTemplate(String verifyCodeTemplate) {
+        this.verifyCodeTemplate = verifyCodeTemplate;
+    }
+}</code></pre>
+<h3>4.3.2.工具类</h3>
+<p>我们把阿里提供的demo进行简化和抽取，封装一个工具类：
+
+</p>
+<pre><code class="lang-java">@Component
+@EnableConfigurationProperties(SmsProperties.class)
+public class SmsUtils {
+
+    @Autowired
+    private SmsProperties prop;
+
+    //产品名称:云通信短信API产品,开发者无需替换
+    static final String product = "Dysmsapi";
+    //产品域名,开发者无需替换
+    static final String domain = "dysmsapi.aliyuncs.com";
+
+    static final Logger logger = LoggerFactory.getLogger(SmsUtils.class);
+
+    public SendSmsResponse sendSms(String phone, String code, String signName, String template) throws ClientException {
+
+        //可自助调整超时时间
+        System.setProperty("sun.net.client.defaultConnectTimeout", "10000");
+        System.setProperty("sun.net.client.defaultReadTimeout", "10000");
+
+        //初始化acsClient,暂不支持region化
+        IClientProfile profile = DefaultProfile.getProfile("cn-hangzhou",
+                prop.getAccessKeyId(), prop.getAccessKeySecret());
+        DefaultProfile.addEndpoint("cn-hangzhou", "cn-hangzhou", product, domain);
+        IAcsClient acsClient = new DefaultAcsClient(profile);
+
+        //组装请求对象-具体描述见控制台-文档部分内容
+        SendSmsRequest request = new SendSmsRequest();
+        request.setMethod(MethodType.POST);
+        //必填:待发送手机号
+        request.setPhoneNumbers(phone);
+        //必填:短信签名-可在短信控制台中找到
+        request.setSignName(signName);
+        //必填:短信模板-可在短信控制台中找到
+        request.setTemplateCode(template);
+        //可选:模板中的变量替换JSON串,如模板内容为"亲爱的${name},您的验证码为${code}"时,此处的值为
+        request.setTemplateParam("{\"code\":\"" + code + "\"}");
+
+        //选填-上行短信扩展码(无特殊需求用户请忽略此字段)
+        //request.setSmsUpExtendCode("90997");
+
+        //可选:outId为提供给业务方扩展字段,最终在短信回执消息中将此值带回给调用者
+        request.setOutId("123456");
+
+        //hint 此处可能会抛出异常，注意catch
+        SendSmsResponse sendSmsResponse = acsClient.getAcsResponse(request);
+
+        logger.info("发送短信状态：{}", sendSmsResponse.getCode());
+        logger.info("发送短信消息：{}", sendSmsResponse.getMessage());
+
+        return sendSmsResponse;
+    }
+}</code></pre>
+<p>属性加载：
+
+</p>
+<pre><code class="lang-java">@ConfigurationProperties(prefix = "leyou.sms")
+public class SmsProperties {
+
+    String accessKeyId;
+
+    String accessKeySecret;
+
+    String signName;
+
+    String verifyCodeTemplate;
+
+    public String getAccessKeyId() {
+        return accessKeyId;
+    }
+
+    public void setAccessKeyId(String accessKeyId) {
+        this.accessKeyId = accessKeyId;
+    }
+
+    public String getAccessKeySecret() {
+        return accessKeySecret;
+    }
+
+    public void setAccessKeySecret(String accessKeySecret) {
+        this.accessKeySecret = accessKeySecret;
+    }
+
+    public String getSignName() {
+        return signName;
+    }
+
+    public void setSignName(String signName) {
+        this.signName = signName;
+    }
+
+    public String getVerifyCodeTemplate() {
+        return verifyCodeTemplate;
+    }
+
+    public void setVerifyCodeTemplate(String verifyCodeTemplate) {
+        this.verifyCodeTemplate = verifyCodeTemplate;
+    }
+}</code></pre>
+<h2>4.4.编写消息监听器</h2>
+<p>接下来，编写消息监听器，当接收到消息后，我们发送短信。
+
+</p>
+<pre><code class="lang-java">@Component
+@EnableConfigurationProperties(SmsProperties.class)
+public class SmsListener {
+
+    @Autowired
+    private SmsUtils smsUtils;
+
+    @Autowired
+    private SmsProperties prop;
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(value = "leyou.sms.queue", durable = "true"),
+            exchange = @Exchange(value = "leyou.sms.exchange", 
+                                 ignoreDeclarationExceptions = "true"),
+            key = {"sms.verify.code"}))
+    public void listenSms(Map&lt;String, String&gt; msg) throws Exception {
+        if (msg == null || msg.size() &lt;= 0) {
+            // 放弃处理
+            return;
+        }
+        String phone = msg.get("phone");
+        String code = msg.get("code");
+
+        if (StringUtils.isBlank(phone) || StringUtils.isBlank(code)) {
+            // 放弃处理
+            return;
+        }
+        // 发送消息
+        SendSmsResponse resp = this.smsUtils.sendSms(phone, code, 
+                                                     prop.getSignName(),
+                                                     prop.getVerifyCodeTemplate());
+        // 发送失败
+        throw new RuntimeException();
+    }
+}</code></pre>
+<p>我们注意到，消息体是一个Map，里面有两个属性：
+
+</p>
+<ul>
+<li>phone：电话号码</li>
+<li>code：短信验证码</li>
+</ul>
+<h2>4.5.启动</h2>
+<p>启动项目，然后查看RabbitMQ控制台，发现交换机已经创建：
+
+</p>
+<p> <img src="assets/1527239600218.png" alt="1527239600218">
+
+</p>
+<p>队列也已经创建：
+
+</p>
+<p> <img src="assets/1527239658153.png" alt="1527239658153">
+
+</p>
+<p>并且绑定：
+
+</p>
+<p> <img src="assets/1527239743836.png" alt="1527239743836">
+
+
+
+</p>
+<h1>5.发送短信功能</h1>
+<p>短信微服务已经准备好，我们就可以继续编写用户中心接口了。
+
+</p>
+<h2>5.1.接口说明</h2>
+<p><img src="assets/1527238127932.png" alt="1527238127932">
+
+
+
+</p>
+<p>这里的业务逻辑是这样的：
+
+</p>
+<ul>
+<li>1）我们接收页面发送来的手机号码</li>
+<li>2）生成一个随机验证码</li>
+<li>3）将验证码保存在服务端</li>
+<li>4）发送短信，将验证码发送到用户手机</li>
+</ul>
+<p>那么问题来了：验证码保存在哪里呢？
+
+</p>
+<p>验证码有一定有效期，一般是5分钟，我们可以利用Redis的过期机制来保存。
+
+</p>
+<h2>5.2.Redis</h2>
+<h3>5.2.1.安装</h3>
+<p>参考课前资料中的：《centos下的redis安装配置.md》
+
+
+
+</p>
+<h3>5.2.2.Spring Data Redis</h3>
+<p>官网：<a href="http://projects.spring.io/spring-data-redis/">http://projects.spring.io/spring-data-redis/</a>
+
+</p>
+<p> <img src="assets/1527250056698.png" alt="1527250056698">                                    
+
+</p>
+<p>Spring Data Redis，是Spring Data 家族的一部分。 对Jedis客户端进行了封装，与spring进行了整合。可以非常方便的来实现redis的配置和操作。 
+
+</p>
+<h3>5.2.3.RedisTemplate基本操作</h3>
+<p>Spring Data Redis 提供了一个工具类：RedisTemplate。里面封装了对于Redis的五种数据结构的各种操作，包括：
+
+</p>
+<ul>
+<li>redisTemplate.opsForValue() ：操作字符串</li>
+<li>redisTemplate.opsForHash() ：操作hash</li>
+<li>redisTemplate.opsForList()：操作list</li>
+<li>redisTemplate.opsForSet()：操作set</li>
+<li>redisTemplate.opsForZSet()：操作zset</li>
+</ul>
+<p>其它一些通用命令，如expire，可以通过redisTemplate.xx()来直接调用
+
+</p>
+<p>5种结构：
+
+</p>
+<ul>
+<li>String：等同于java中的，<code>Map&lt;String,String&gt;</code></li>
+<li>list：等同于java中的<code>Map&lt;String,List&lt;String&gt;&gt;</code></li>
+<li>set：等同于java中的<code>Map&lt;String,Set&lt;String&gt;&gt;</code></li>
+<li>sort_set：可排序的set</li>
+<li>hash：等同于java中的：`Map<string,map<string,string>&gt;</string,map<string,string></li>
+</ul>
+<h3>5.2.4.StringRedisTemplate</h3>
+<p>RedisTemplate在创建时，可以指定其泛型类型：
+
+</p>
+<ul>
+<li>K：代表key 的数据类型</li>
+<li>V: 代表value的数据类型</li>
+</ul>
+<p>注意：这里的类型不是Redis中存储的数据类型，而是Java中的数据类型，RedisTemplate会自动将Java类型转为Redis支持的数据类型：字符串、字节、二进制等等。
+
+</p>
+<p><img src="assets/1527250218215.png" alt="1527250218215">
+
+</p>
+<p>不过RedisTemplate默认会采用JDK自带的序列化（Serialize）来对对象进行转换。生成的数据十分庞大，因此一般我们都会指定key和value为String类型，这样就由我们自己把对象序列化为json字符串来存储即可。
+
+
+
+</p>
+<p>因为大部分情况下，我们都会使用key和value都为String的RedisTemplate，因此Spring就默认提供了这样一个实现： <img src="assets/1527256139407.png" alt="1527256139407">
+
+</p>
+<h3>5.2.5.测试</h3>
+<p>我们在项目中编写一个测试案例：
+
+</p>
+<p>首先在项目中引入Redis启动器：
+
+</p>
+<pre><code class="lang-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-data-redis&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>然后在配置文件中指定Redis地址：
+
+</p>
+<pre><code class="lang-yaml">spring:
+  redis:
+    host: 192.168.56.101</code></pre>
+<p>然后就可以直接注入<code>StringRedisTemplate</code>对象了：
+
+</p>
+<pre><code class="lang-java">@RunWith(SpringRunner.class)
+@SpringBootTest(classes = LyUserService.class)
+public class RedisTest {
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+    @Test
+    public void testRedis() {
+        // 存储数据
+        this.redisTemplate.opsForValue().set("key1", "value1");
+        // 获取数据
+        String val = this.redisTemplate.opsForValue().get("key1");
+        System.out.println("val = " + val);
+    }
+
+    @Test
+    public void testRedis2() {
+        // 存储数据，并指定剩余生命时间,5小时
+        this.redisTemplate.opsForValue().set("key2", "value2",
+                5, TimeUnit.HOURS);
+    }
+
+    @Test
+    public void testHash(){
+        BoundHashOperations&lt;String, Object, Object&gt; hashOps =
+                this.redisTemplate.boundHashOps("user");
+        // 操作hash数据
+        hashOps.put("name", "jack");
+        hashOps.put("age", "21");
+
+        // 获取单个数据
+        Object name = hashOps.get("name");
+        System.out.println("name = " + name);
+
+        // 获取所有数据
+        Map&lt;Object, Object&gt; map = hashOps.entries();
+        for (Map.Entry&lt;Object, Object&gt; me : map.entrySet()) {
+            System.out.println(me.getKey() + " : " + me.getValue());
+        }
+    }
+}</code></pre>
+<h2>5.3.controller</h2>
+<pre><code class="lang-java">/**
+ * 发送手机验证码
+ * @param phone
+ * @return
+ */
+@PostMapping("code")
+public ResponseEntity&lt;Void&gt; sendVerifyCode(String phone) {
+    Boolean boo = this.userService.sendVerifyCode(phone);
+    if (boo == null || !boo) {
+        return new ResponseEntity&lt;&gt;(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    return new ResponseEntity&lt;&gt;(HttpStatus.CREATED);
+}</code></pre>
+<h2>5.4.service</h2>
+<p>这里的逻辑会稍微复杂：
+
+</p>
+<ul>
+<li>生成随机验证码</li>
+<li>将验证码保存到Redis中，用来在注册的时候验证</li>
+<li>发送验证码到<code>leyou-sms-service</code>服务，发送短信</li>
+</ul>
+<p>因此，我们需要引入Redis和AMQP：
+
+</p>
+<pre><code class="lang-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-data-redis&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-amqp&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>添加RabbitMQ和Redis配置：
+
+</p>
+<pre><code class="lang-yaml">spring:
+  redis:
+    host: 192.168.56.101
+  rabbitmq:
+    host: 192.168.56.101
+    username: leyou
+    password: leyou
+    virtual-host: /leyou
+    template:
+      retry:
+        enabled: true
+        initial-interval: 10000ms
+        max-interval: 210000ms
+        multiplier: 2
+    publisher-confirms: true</code></pre>
+<p>另外还要用到工具类，生成6位随机码，这个我们封装到了<code>leyou-common</code>中，因此需要引入依赖：
+
+</p>
+<pre><code class="lang-xml">&lt;dependency&gt;
+    &lt;groupId&gt;com.leyou.common&lt;/groupId&gt;
+    &lt;artifactId&gt;ly-common&lt;/artifactId&gt;
+    &lt;version&gt;${leyou.latest.version}&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<p>生成随机码的工具：
+
+</p>
+<pre><code class="lang-java">/**
+ * 生成指定位数的随机数字
+ * @param len 随机数的位数
+ * @return 生成的随机数
+ */
+public static String generateCode(int len){
+    len = Math.min(len, 8);
+    int min = Double.valueOf(Math.pow(10, len - 1)).intValue();
+    int num = new Random().nextInt(
+        Double.valueOf(Math.pow(10, len + 1)).intValue() - 1) + min;
+    return String.valueOf(num).substring(0,len);
+}</code></pre>
+<p>Service代码：
+
+</p>
+<pre><code class="lang-java">@Autowired
+private StringRedisTemplate redisTemplate;
+
+@Autowired
+private AmqpTemplate amqpTemplate;
+
+static final String KEY_PREFIX = "user:code:phone:";
+
+static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
+public Boolean sendVerifyCode(String phone) {
+    // 生成验证码
+    String code = NumberUtils.generateCode(6);
+    try {
+        // 发送短信
+        Map&lt;String, String&gt; msg = new HashMap&lt;&gt;();
+        msg.put("phone", phone);
+        msg.put("code", code);
+        this.amqpTemplate.convertAndSend("ly.sms.exchange", "sms.verify.code", msg);
+        // 将code存入redis
+        this.redisTemplate.opsForValue().set(KEY_PREFIX + phone, code, 5, TimeUnit.MINUTES);
+        return true;
+    } catch (Exception e) {
+        logger.error("发送短信失败。phone：{}， code：{}", phone, code);
+        return false;
+    }
+}</code></pre>
+<p>注意：要设置短信验证码在Redis的缓存时间为5分钟
+
+
+
+</p>
+<h2>5.5.测试</h2>
+<p>通过RestClient发送请求试试：
+
+</p>
+<p> <img src="/assets/1527240486327.png" alt="1527240486327">
+
+</p>
+<p>查看Redis中的数据：
+
+</p>
+<p> <img src="assets/1527240610713.png" alt="1527240610713">
+
+</p>
+<p>查看短信：
+
+</p>
+<p> <img src="assets/1527240770470.png" alt="1527240770470">
+
+
+
+</p>
+<h1>6.注册功能</h1>
+<h2>6.1.接口说明</h2>
+<p><img src="assets/1527240855176.png" alt="1527240855176">
+
+</p>
+<h2>6.2.controller</h2>
+<pre><code class="lang-java">/**
+ * 注册
+ * @param user
+ * @param code
+ * @return
+ */
+@PostMapping("register")
+public ResponseEntity&lt;Void&gt; register(User user, @RequestParam("code") String code) {
+    Boolean boo = this.userService.register(user, code);
+    if (boo == null || !boo) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    }
+    return new ResponseEntity&lt;&gt;(HttpStatus.CREATED);
+}</code></pre>
+<h2>6.3.service</h2>
+<p>基本逻辑：
+
+</p>
+<ul>
+<li>1）校验短信验证码</li>
+<li>2）生成盐</li>
+<li>3）对密码加密</li>
+<li>4）写入数据库</li>
+<li>5）删除Redis中的验证码</li>
+</ul>
+<pre><code class="lang-java">public Boolean register(User user, String code) {
+    String key = KEY_PREFIX + user.getPhone();
+    // 从redis取出验证码
+    String codeCache = this.redisTemplate.opsForValue().get(key);
+    // 检查验证码是否正确
+    if (!code.equals(codeCache)) {
+        // 不正确，返回
+        return false;
+    }
+    user.setId(null);
+    user.setCreated(new Date());
+    // 生成盐
+    String salt = CodecUtils.generateSalt();
+    user.setSalt(salt);
+    // 对密码进行加密
+    user.setPassword(CodecUtils.md5Hex(user.getPassword(), salt));
+    // 写入数据库
+    boolean boo = this.userMapper.insertSelective(user) == 1;
+
+    // 如果注册成功，删除redis中的code
+    if (boo) {
+        try {
+            this.redisTemplate.delete(key);
+        } catch (Exception e) {
+            logger.error("删除缓存验证码失败，code：{}", code, e);
+        }
+    }
+    return boo;
+}</code></pre>
+<h2>6.4.测试</h2>
+<p>我们通过RestClient测试：
+
+</p>
+<p><img src="assets/1527241936160.png" alt="1527241936160">
+
+</p>
+<p>查看数据库：
+
+</p>
+<p> <img src="assets/1527241966575.png" alt="1527241966575">
+
+
+
+</p>
+<h2>6.5.服务端数据校验</h2>
+<p>刚才虽然实现了注册，但是服务端并没有进行数据校验，而前端的校验是很容易被有心人绕过的。所以我们必须在后台添加数据校验功能：
+
+</p>
+<p>我们这里会使用Hibernate-Validator框架完成数据校验：
+
+</p>
+<p>而SpringBoot的web启动器中已经集成了相关依赖：
+
+</p>
+<p> <img src="assets/1527244265451.png" alt="1527244265451">
+
+</p>
+<h3>6.5.1.什么是Hibernate Validator</h3>
+<p>Hibernate Validator是Hibernate提供的一个开源框架，使用注解方式非常方便的实现服务端的数据校验。
+
+</p>
+<p>官网：<a href="http://hibernate.org/validator/">http://hibernate.org/validator/</a>
+
+</p>
+<p><img src="assets/1527244393041.png" alt="1527244393041">
+
+
+
+</p>
+<p><strong>hibernate Validator</strong> 是 Bean Validation 的参考实现 。
+
+</p>
+<p>Hibernate Validator 提供了 JSR 303 规范中所有内置 constraint（约束） 的实现，除此之外还有一些附加的 constraint。
+
+</p>
+<p>在日常开发中，Hibernate Validator经常用来验证bean的字段，基于注解，方便快捷高效。
+
+</p>
+<h3>6.5.2.Bean校验的注解</h3>
+<p>常用注解如下：
+
+</p>
+<p>| <strong>Constraint</strong>                                     | <strong>详细信息</strong>                                                 |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| <strong>@Valid</strong>                                         | 被注释的元素是一个对象，需要检查此对象的所有字段值           |
+| <strong>@Null</strong>                                          | 被注释的元素必须为 null                                      |
+| <strong>@NotNull</strong>                                       | 被注释的元素必须不为 null                                    |
+| <strong>@AssertTrue</strong>                                    | 被注释的元素必须为 true                                      |
+| <strong>@AssertFalse</strong>                                   | 被注释的元素必须为 false                                     |
+| <strong>@Min(value)</strong>                                    | 被注释的元素必须是一个数字，其值必须大于等于指定的最小值     |
+| <strong>@Max(value)</strong>                                    | 被注释的元素必须是一个数字，其值必须小于等于指定的最大值     |
+| <strong>@DecimalMin(value)</strong>                             | 被注释的元素必须是一个数字，其值必须大于等于指定的最小值     |
+| <strong>@DecimalMax(value)</strong>                             | 被注释的元素必须是一个数字，其值必须小于等于指定的最大值     |
+| <strong>@Size(max,   min)</strong>                              | 被注释的元素的大小必须在指定的范围内                         |
+| <strong>@Digits   (integer, fraction)</strong>                  | 被注释的元素必须是一个数字，其值必须在可接受的范围内         |
+| <strong>@Past</strong>                                          | 被注释的元素必须是一个过去的日期                             |
+| <strong>@Future</strong>                                        | 被注释的元素必须是一个将来的日期                             |
+| <strong>@Pattern(value)</strong>                                | 被注释的元素必须符合指定的正则表达式                         |
+| <strong>@Email</strong>                                         | 被注释的元素必须是电子邮箱地址                               |
+| <strong>@Length</strong>                                        | 被注释的字符串的大小必须在指定的范围内                       |
+| <strong>@NotEmpty</strong>                                      | 被注释的字符串的必须非空                                     |
+| <strong>@Range</strong>                                         | 被注释的元素必须在合适的范围内                               |
+| <strong>@NotBlank</strong>                                      | 被注释的字符串的必须非空                                     |
+| <strong>@URL(protocol=,host=,   port=,regexp=, flags=)</strong> | 被注释的字符串必须是一个有效的url                            |
+| <strong>@CreditCardNumber</strong>                              | 被注释的字符串必须通过Luhn校验算法，银行卡，信用卡等号码一般都用Luhn计算合法性 |
+
+</p>
+<h3>6.5.3.给User添加校验</h3>
+<p>我们在<code>ly-user-interface</code>中添加Hibernate-Validator依赖：
+
+</p>
+<pre><code class="lang-xml">        &lt;dependency&gt;
+            &lt;groupId&gt;org.hibernate.validator&lt;/groupId&gt;
+            &lt;artifactId&gt;hibernate-validator&lt;/artifactId&gt;
+        &lt;/dependency&gt;</code></pre>
+<p>我们在User对象的部分属性上添加注解：
+
+</p>
+<pre><code class="lang-java">@Table(name = "tb_user")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Length(min = 4, max = 30, message = "用户名只能在4~30位之间")
+    private String username;// 用户名
+
+    @JsonIgnore
+    @Length(min = 4, max = 30, message = "用户名只能在4~30位之间")
+    private String password;// 密码
+
+    @Pattern(regexp = "^1[35678]\\d{9}$", message = "手机号格式不正确")
+    private String phone;// 电话
+
+    private Date created;// 创建时间
+
+    @JsonIgnore
+    private String salt;// 密码的盐值
+}</code></pre>
+<h3>6.5.4.在controller上进行控制</h3>
+<p>在controller中只需要给User添加 @Valid注解即可。
+
+</p>
+<p> <img src="assets/1527247334410.png" alt="1527247334410">
+
+
+
+</p>
+<h3>6.5.5.测试</h3>
+<p>我们故意填错：
+
+</p>
+<p> <img src="assets/1527247422251.png" alt="1527247422251">
+
+</p>
+<p>然后SpringMVC会自动返回错误信息：
+
+</p>
+<p> <img src="assets/1527247492172.png" alt="1527247492172">
+
+
+
+</p>
+<h1>7.根据用户名和密码查询用户</h1>
+<h2>7.1.接口说明</h2>
+<h3>功能说明</h3>
+<p>查询功能，根据参数中的用户名和密码查询指定用户
+
+</p>
+<h3>接口路径</h3>
+<pre><code>GET /query</code></pre>
+<h3>参数说明：</h3>
+<p>form表单格式
+
+</p>
+<p>| 参数     | 说明                                     | 是否必须 | 数据类型 | 默认值 |
+| -------- | ---------------------------------------- | -------- | -------- | ------ |
+| username | 用户名，格式为4~30位字母、数字、下划线   | 是       | String   | 无     |
+| password | 用户密码，格式为4~30位字母、数字、下划线 | 是       | String   | 无     |
+
+</p>
+<h3>返回结果：</h3>
+<p>用户的json格式数据
+
+</p>
+<pre><code class="lang-json">{
+    "id": 6572312,
+    "username":"test",
+    "phone":"13688886666",
+    "created": 1342432424
+}</code></pre>
+<p>状态码：
+
+</p>
+<ul>
+<li>200：注册成功</li>
+<li>400：用户名或密码错误</li>
+<li>500：服务器内部异常，注册失败</li>
+</ul>
+<h2>7.2.controller</h2>
+<pre><code class="lang-java">/**
+ * 根据用户名和密码查询用户
+ * @param username
+ * @param password
+ * @return
+ */
+@GetMapping("query")
+public ResponseEntity&lt;User&gt; queryUser(
+    @RequestParam("username") String username,
+    @RequestParam("password") String password
+    ) {
+        User user = this.userService.queryUser(username, password);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        return ResponseEntity.ok(user);
+    }</code></pre>
+<h2>7.3.service</h2>
+<pre><code class="lang-java">public User queryUser(String username, String password) {
+    // 查询
+    User record = new User();
+    record.setUsername(username);
+    User user = this.userMapper.selectOne(record);
+    // 校验用户名
+    if (user == null) {
+        return null;
+    }
+    // 校验密码
+    if (!user.getPassword().equals(CodecUtils.md5Hex(password, user.getSalt()))) {
+        return null;
+    }
+    // 用户名密码都正确
+    return user;
+}</code></pre>
+<p>要注意，查询时也要对密码进行加密后判断是否一致。
+
+</p>
+<h2>7.4.测试</h2>
+<p>我们通过RestClient测试：
+
+</p>
+<p> <img src="assets/1527242841777.png" alt="1527242841777">
+
+</p>
+<h1>8.在注册页进行测试</h1>
+<p>在注册页填写信息：
+
+</p>
+<p> <img src="assets/1527243288933.png" alt="1527243288933">
+
+</p>
+<p>提交发现页面自动跳转到了登录页，查看数据库：
+
+</p>
+<p> <img src="assets/1527243354160.png" alt="1527243354160">
+
+
+
+
+
+
+</p>
+<p>Edit By <a href="http://mahua.jser.me">MaHua</a></p>
+</body></html>

@@ -1,0 +1,1501 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <title></title>
+<style id="system" type="text/css">h1,h2,h3,h4,h5,h6,p,blockquote {    margin: 0;    padding: 0;}body {    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;    font-size: 13px;    line-height: 18px;    color: #737373;    margin: 10px 13px 10px 13px;}a {    color: #0069d6;}a:hover {    color: #0050a3;    text-decoration: none;}a img {    border: none;}p {    margin-bottom: 9px;}h1,h2,h3,h4,h5,h6 {    color: #404040;    line-height: 36px;}h1 {    margin-bottom: 18px;    font-size: 30px;}h2 {    font-size: 24px;}h3 {    font-size: 18px;}h4 {    font-size: 16px;}h5 {    font-size: 14px;}h6 {    font-size: 13px;}hr {    margin: 0 0 19px;    border: 0;    border-bottom: 1px solid #ccc;}blockquote {    padding: 13px 13px 21px 15px;    margin-bottom: 18px;    font-family:georgia,serif;    font-style: italic;}blockquote:before {    content:"C";    font-size:40px;    margin-left:-10px;    font-family:georgia,serif;    color:#eee;}blockquote p {    font-size: 14px;    font-weight: 300;    line-height: 18px;    margin-bottom: 0;    font-style: italic;}code, pre {    font-family: Monaco, Andale Mono, Courier New, monospace;}code {    background-color: #fee9cc;    color: rgba(0, 0, 0, 0.75);    padding: 1px 3px;    font-size: 12px;    -webkit-border-radius: 3px;    -moz-border-radius: 3px;    border-radius: 3px;}pre {    display: block;    padding: 14px;    margin: 0 0 18px;    line-height: 16px;    font-size: 11px;    border: 1px solid #d9d9d9;    white-space: pre-wrap;    word-wrap: break-word;}pre code {    background-color: #fff;    color:#737373;    font-size: 11px;    padding: 0;}@media screen and (min-width: 768px) {    body {        width: 748px;        margin:10px auto;    }}</style><style id="custom" type="text/css"></style></head>
+<body marginheight="0"><h1>0.学习目标</h1>
+<ul>
+<li>独立编写数据导入功能</li>
+<li>独立实现基本搜索</li>
+<li>独立实现页面分页</li>
+<li>独立实现结果排序</li>
+</ul>
+<h1>1.索引库数据导入</h1>
+<p>昨天我们学习了Elasticsearch的基本应用。今天就学以致用，搭建搜索微服务，实现搜索功能。
+
+</p>
+<h2>1.1.创建搜索服务</h2>
+<p>创建module：
+
+</p>
+<p><img src="assets/1532178218793.png" alt="1532178218793">
+
+</p>
+<p><img src="assets/1532178276070.png" alt="1532178276070">
+
+</p>
+<p>Pom文件：
+
+</p>
+<pre><code class="lang-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;parent&gt;
+        &lt;artifactId&gt;leyou&lt;/artifactId&gt;
+        &lt;groupId&gt;com.leyou.parent&lt;/groupId&gt;
+        &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+    &lt;/parent&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+    &lt;groupId&gt;com.leyou.search&lt;/groupId&gt;
+    &lt;artifactId&gt;leyou-search&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+
+    &lt;dependencies&gt;
+        &lt;!-- web --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;!-- elasticsearch --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-data-elasticsearch&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;!-- eureka --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-cloud-starter-netflix-eureka-client&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;!-- feign --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-cloud-starter-openfeign&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/project&gt;</code></pre>
+<p>application.yml：
+
+</p>
+<pre><code class="lang-yaml">server:
+  port: 8083
+spring:
+  application:
+    name: search-service
+  data:
+    elasticsearch:
+      cluster-name: elasticsearch
+      cluster-nodes: 192.168.56.101:9300
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:10086/eureka
+  instance:
+    lease-renewal-interval-in-seconds: 5 # 每隔5秒发送一次心跳
+    lease-expiration-duration-in-seconds: 10 # 10秒不发送就过期
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    instance-id: ${spring.application.name}:${server.port}</code></pre>
+<p>启动类：
+
+</p>
+<pre><code class="lang-java">@SpringBootApplication
+@EnableDiscoveryClient
+@EnableFeignClients
+public class LySearchService {
+
+    public static void main(String[] args) {
+        SpringApplication.run(LySearchService.class, args);
+    }
+}</code></pre>
+<h2>1.2.索引库数据格式分析</h2>
+<p>接下来，我们需要商品数据导入索引库，便于用户搜索。
+
+</p>
+<p>那么问题来了，我们有SPU和SKU，到底如何保存到索引库？
+
+</p>
+<h3>1.2.1.以结果为导向</h3>
+<p>大家来看下搜索结果页：
+
+</p>
+<p><img src="assets/1532180648745.png" alt="1532180648745">
+
+</p>
+<p>可以看到，每一个搜索结果都有至少1个商品，当我们选择大图下方的小图，商品会跟着变化。
+
+</p>
+<p>因此，<strong>搜索的结果是SPU，即多个SKU的集合</strong>。
+
+</p>
+<p>既然搜索的结果是SPU，那么我们索引库中存储的应该也是SPU，但是却需要包含SKU的信息。
+
+
+
+</p>
+<h3>1.2.2.需要什么数据</h3>
+<p>再来看看页面中有什么数据：
+
+</p>
+<p> <img src="assets/1526607712207.png" alt="1526607712207"> 
+
+</p>
+<p>直观能看到的：图片、价格、标题、副标题
+
+</p>
+<p>暗藏的数据：spu的id，sku的id
+
+
+
+</p>
+<p>另外，页面还有过滤条件：
+
+</p>
+<p> <img src="assets/1526608095471.png" alt="1526608095471">
+
+</p>
+<p>这些过滤条件也都需要存储到索引库中，包括：
+
+</p>
+<p>商品分类、品牌、可用来搜索的规格参数等
+
+</p>
+<p>综上所述，我们需要的数据格式有：
+
+</p>
+<p>spuId、SkuId、商品分类id、品牌id、图片、价格、商品的创建时间、sku信息集、可搜索的规格参数
+
+
+
+</p>
+<h3>1.2.3.最终的数据结构</h3>
+<p>我们创建一个类，封装要保存到索引库的数据，并设置映射属性：
+
+</p>
+<pre><code class="lang-java">@Document(indexName = "goods", type = "docs", shards = 1, replicas = 0)
+public class Goods {
+    @Id
+    private Long id; // spuId
+    @Field(type = FieldType.Text, analyzer = "ik_max_word")
+    private String all; // 所有需要被搜索的信息，包含标题，分类，甚至品牌
+    @Field(type = FieldType.Keyword, index = false)
+    private String subTitle;// 卖点
+    private Long brandId;// 品牌id
+    private Long cid1;// 1级分类id
+    private Long cid2;// 2级分类id
+    private Long cid3;// 3级分类id
+    private Date createTime;// 创建时间
+    private List&lt;Long&gt; price;// 价格
+    @Field(type = FieldType.Keyword, index = false)
+    private String skus;// sku信息的json结构
+    private Map&lt;String, Object&gt; specs;// 可搜索的规格参数，key是参数名，值是参数值
+}</code></pre>
+<p>一些特殊字段解释：
+
+</p>
+<ul>
+<li><p>all：用来进行全文检索的字段，里面包含标题、商品分类信息</p>
+</li>
+<li><p>price：价格数组，是所有sku的价格集合。方便根据价格进行筛选过滤</p>
+</li>
+<li><p>skus：用于页面展示的sku信息，不索引，不搜索。包含skuId、image、price、title字段</p>
+</li>
+<li><p>specs：所有规格参数的集合。key是参数名，值是参数值。</p>
+<p>例如：我们在specs中存储 内存：4G,6G，颜色为红色，转为json就是：</p>
+<pre><code class="lang-json">{
+    "specs":{
+        "内存":[4G,6G],
+        "颜色":"红色"
+    }
+}</code></pre>
+<p>当存储到索引库时，elasticsearch会处理为两个字段：</p>
+<ul>
+<li>specs.内存：[4G,6G]</li>
+<li>specs.颜色：红色</li>
+</ul>
+<p>另外， 对于字符串类型，还会额外存储一个字段，这个字段不会分词，用作聚合。</p>
+<ul>
+<li>specs.颜色.keyword：红色</li>
+</ul>
+</li>
+</ul>
+<h2>1.3.商品微服务提供接口</h2>
+<p>索引库中的数据来自于数据库，我们不能直接去查询商品的数据库，因为真实开发中，每个微服务都是相互独立的，包括数据库也是一样。所以我们只能调用商品微服务提供的接口服务。
+
+</p>
+<p>先思考我们需要的数据：
+
+</p>
+<ul>
+<li><p>SPU信息</p>
+</li>
+<li><p>SKU信息</p>
+</li>
+<li><p>SPU的详情</p>
+</li>
+<li><p>商品分类名称（拼接all字段）</p>
+</li>
+</ul>
+<p>再思考我们需要哪些服务：
+
+</p>
+<ul>
+<li>第一：分批查询spu的服务，已经写过。</li>
+<li>第二：根据spuId查询sku的服务，已经写过</li>
+<li>第三：根据spuId查询SpuDetail的服务，已经写过</li>
+<li>第四：根据商品分类id，查询商品分类名称，没写过</li>
+<li>第五：根据商品品牌id，查询商品的品牌，没写过</li>
+</ul>
+<p>因此我们需要额外提供一个查询商品分类名称的接口。
+
+
+
+</p>
+<h3>1.3.1.商品分类名称查询</h3>
+<p>controller：
+
+</p>
+<pre><code class="lang-java">/**
+ * 根据商品分类id查询名称
+ * @param ids 要查询的分类id集合
+ * @return 多个名称的集合
+ */
+@GetMapping("names")
+public ResponseEntity&lt;List&lt;String&gt;&gt; queryNameByIds(@RequestParam("ids") List&lt;Long&gt; ids){
+    List&lt;String &gt; list = this.categoryService.queryNameByIds(ids);
+    if (list == null || list.size() &lt; 1) {
+        return new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);
+    }
+    return ResponseEntity.ok(list);
+}</code></pre>
+<p>测试：
+
+</p>
+<p><img src="assets/1532213731039.png" alt="1532213731039">
+
+
+
+</p>
+<h3>1.3.2.编写FeignClient</h3>
+<h4>1.3.2.1.问题展现</h4>
+<p>操作leyou-search工程
+
+</p>
+<p>现在，我们要在搜索微服务调用商品微服务的接口。
+
+</p>
+<p>第一步要引入商品微服务依赖：<code>leyou-item-interface</code>。
+
+</p>
+<pre><code class="lang-xml">&lt;!--商品微服务--&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.leyou.service&lt;/groupId&gt;
+    &lt;artifactId&gt;ly-item-interface&lt;/artifactId&gt;
+    &lt;version&gt;${leyou.latest.version}&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<p>第二步，编写FeignClient
+
+</p>
+<pre><code class="lang-java">@FeignClient(value = "item-service")
+@RequestMapping("/goods")
+public interface GoodsClient {
+
+    /**
+     * 分页查询商品
+     * @param page
+     * @param rows
+     * @param saleable
+     * @param key
+     * @return
+     */
+    @GetMapping("/spu/page")
+    ResponseEntity&lt;PageResult&lt;SpuBo&gt;&gt; querySpuByPage(
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "rows", defaultValue = "5") Integer rows,
+            @RequestParam(value = "saleable", defaultValue = "true") Boolean saleable,
+            @RequestParam(value = "key", required = false) String key);
+
+    /**
+     * 根据spu商品id查询详情
+     * @param id
+     * @return
+     */
+    @GetMapping("/spu/detail/{id}")
+    ResponseEntity&lt;SpuDetail&gt; querySpuDetailById(@PathVariable("id") Long id);
+
+    /**
+     * 根据spu的id查询sku
+     * @param id
+     * @return
+     */
+    @GetMapping("sku/list")
+    ResponseEntity&lt;List&lt;Sku&gt;&gt; querySkuBySpuId(@RequestParam("id") Long id);
+}</code></pre>
+<p>以上的这些代码直接从商品微服务中拷贝而来，完全一致。差别就是没有方法的具体实现。大家觉得这样有没有问题？
+
+
+
+</p>
+<p>而FeignClient代码遵循SpringMVC的风格，因此与商品微服务的Controller完全一致。这样就存在一定的问题：
+
+</p>
+<ul>
+<li>代码冗余。尽管不用写实现，只是写接口，但服务调用方要写与服务controller一致的代码，有几个消费者就要写几次。</li>
+<li>增加开发成本。调用方还得清楚知道接口的路径，才能编写正确的FeignClient。</li>
+</ul>
+<h4>1.3.2.2.解决方案</h4>
+<p>因此，一种比较友好的实践是这样的：
+
+</p>
+<ul>
+<li>我们的服务提供方不仅提供实体类，还要提供api接口声明</li>
+<li>调用方不用字自己编写接口方法声明，直接继承提供方给的Api接口即可，</li>
+</ul>
+<p>第一步：服务的提供方在<code>leyou-item-interface</code>中提供API接口，并编写接口声明：
+
+</p>
+<p> <img src="assets/1526613268722.png" alt="1526613268722">
+
+</p>
+<p>商品分类服务接口：
+
+</p>
+<pre><code class="lang-java">@RequestMapping("category")
+public interface CategoryApi {
+
+    @GetMapping("names")
+    ResponseEntity&lt;List&lt;String&gt;&gt; queryNameByIds(@RequestParam("ids") List&lt;Long&gt; ids);
+}</code></pre>
+<p>商品服务接口，返回值不再使用ResponseEntity：
+
+</p>
+<pre><code class="lang-java">@RequestMapping("/goods")
+public interface GoodsApi {
+
+    /**
+     * 分页查询商品
+     * @param page
+     * @param rows
+     * @param saleable
+     * @param key
+     * @return
+     */
+    @GetMapping("/spu/page")
+    PageResult&lt;SpuBo&gt; querySpuByPage(
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "rows", defaultValue = "5") Integer rows,
+            @RequestParam(value = "saleable", defaultValue = "true") Boolean saleable,
+            @RequestParam(value = "key", required = false) String key);
+
+    /**
+     * 根据spu商品id查询详情
+     * @param id
+     * @return
+     */
+    @GetMapping("/spu/detail/{id}")
+    SpuDetail querySpuDetailById(@PathVariable("id") Long id);
+
+    /**
+     * 根据spu的id查询sku
+     * @param id
+     * @return
+     */
+    @GetMapping("sku/list")
+    List&lt;Sku&gt; querySkuBySpuId(@RequestParam("id") Long id);
+}</code></pre>
+<p>需要引入springMVC及leyou-common的依赖：
+
+</p>
+<pre><code class="lang-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-webmvc&lt;/artifactId&gt;
+    &lt;version&gt;5.0.6.RELEASE&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.leyou.common&lt;/groupId&gt;
+    &lt;artifactId&gt;leyou-common&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+<p>第二步：在调用方<code>leyou-search</code>中编写FeignClient，但不要写方法声明了，直接继承<code>leyou-item-interface</code>提供的api接口：
+
+</p>
+<p>商品的FeignClient：
+
+</p>
+<pre><code class="lang-java">@FeignClient(value = "item-service")
+public interface GoodsClient extends GoodsApi {
+}</code></pre>
+<p>商品分类的FeignClient：
+
+</p>
+<pre><code class="lang-java">@FeignClient(value = "item-service")
+public interface CategoryClient extends CategoryApi {
+}</code></pre>
+<p>是不是简单多了？
+
+</p>
+<p>项目结构：
+
+</p>
+<p> <img src="assets/1532215914558.png" alt="1532215914558">
+
+</p>
+<p> <img src="assets/1532218231760.png" alt="1532218231760">
+
+
+
+</p>
+<h4>1.3.2.3.测试</h4>
+<p>在leyou-search中引入springtest依赖：
+
+</p>
+<pre><code class="lang-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
+<p>创建测试类：
+
+</p>
+<p>在接口上按快捷键：<code>Ctrl + Shift + T</code>
+
+</p>
+<p> <img src="assets/1532216103709.png" alt="1532216103709">
+
+</p>
+<p> <img src="assets/1532216169168.png" alt="1532216169168">
+
+</p>
+<p>测试代码：
+
+</p>
+<pre><code class="lang-java">@RunWith(SpringRunner.class)
+@SpringBootTest(classes = LeyouSearchApplication.class)
+public class CategoryClientTest {
+
+    @Autowired
+    private CategoryClient categoryClient;
+
+    @Test
+    public void testQueryCategories() {
+        List&lt;String&gt; names = this.categoryClient.queryNameByIds(Arrays.asList(1L, 2L, 3L));
+        names.forEach(System.out::println);
+    }
+}</code></pre>
+<p>结果：
+
+</p>
+<p><img src="assets/1532216884221.png" alt="1532216884221">
+
+
+
+</p>
+<h2>1.4.导入数据</h2>
+<p>导入数据只做一次,以后的更新删除等操作通过消息队列来操作索引库
+
+</p>
+<h3>1.4.1.创建GoodsRepository</h3>
+<p>java代码：
+
+</p>
+<pre><code class="lang-java">public interface GoodsRepository extends ElasticsearchRepository&lt;Goods, Long&gt; {
+}</code></pre>
+<h3>1.4.2.创建索引</h3>
+<p>我们新建一个测试类，在里面进行数据的操作：
+
+</p>
+<pre><code class="lang-java">@RunWith(SpringRunner.class)
+@SpringBootTest(classes = LeyouSearchApplication.class)
+public class ElasticsearchTest {
+
+    @Autowired
+    private GoodsRepository goodsRepository;
+
+    @Autowired
+    private ElasticsearchTemplate elasticsearchTemplate;
+
+    @Test
+    public void createIndex(){
+        // 创建索引
+        this.elasticsearchTemplate.createIndex(Goods.class);
+        // 配置映射
+        this.elasticsearchTemplate.putMapping(Goods.class);
+    }
+}</code></pre>
+<p>通过kibana查看：
+
+</p>
+<p><img src="assets/1532217819818.png" alt="1532217819818">
+
+
+
+</p>
+<h3>1.4.3.导入数据</h3>
+<p>导入数据其实就是查询数据，然后把查询到的Spu转变为Goods来保存，因此我们先编写一个SearchService，然后在里面定义一个方法， 把Spu转为Goods
+
+</p>
+<pre><code class="lang-java">@Service
+public class SearchService {
+
+    @Autowired
+    private CategoryClient categoryClient;
+
+    @Autowired
+    private GoodsClient goodsClient;
+
+    @Autowired
+    private SpecificationClient specificationClient;
+
+    private ObjectMapper mapper = new ObjectMapper();
+
+    public Goods buildGoods(Spu spu) throws IOException {
+        Goods goods = new Goods();
+
+        // 查询商品分类名称
+        List&lt;String&gt; names = this.categoryClient.queryNameByIds(Arrays.asList(spu.getCid1(), spu.getCid2(), spu.getCid3()));
+        // 查询sku
+        List&lt;Sku&gt; skus = this.goodsClient.querySkuBySpuId(spu.getId());
+        // 查询详情
+        SpuDetail spuDetail = this.goodsClient.querySpuDetailById(spu.getId());
+        // 查询规格参数
+        List&lt;SpecParam&gt; params = this.specificationClient.querySpecParam(null, spu.getCid3(), true, null);
+
+        // 处理sku，仅封装id、价格、标题、图片，并获得价格集合
+        List&lt;Long&gt; prices = new ArrayList&lt;&gt;();
+        List&lt;Map&lt;String, Object&gt;&gt; skuList = new ArrayList&lt;&gt;();
+        skus.forEach(sku -&gt; {
+            prices.add(sku.getPrice());
+            Map&lt;String, Object&gt; skuMap = new HashMap&lt;&gt;();
+            skuMap.put("id", sku.getId());
+            skuMap.put("title", sku.getTitle());
+            skuMap.put("price", sku.getPrice());
+            skuMap.put("image", StringUtils.isBlank(sku.getImages()) ? "" : StringUtils.split(sku.getImages(), ",")[0]);
+            skuList.add(skuMap);
+        });
+
+        // 处理规格参数
+        Map&lt;String, Object&gt; genericSpecs = mapper.readValue(spuDetail.getGenericSpec(), new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {
+        });
+        Map&lt;String, Object&gt; specialSpecs = mapper.readValue(spuDetail.getSpecialSpec(), new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {
+        });
+        // 获取可搜索的规格参数
+        Map&lt;String, Object&gt; searchSpec = new HashMap&lt;&gt;();
+
+        // 过滤规格模板，把所有可搜索的信息保存到Map中
+        Map&lt;String, Object&gt; specMap = new HashMap&lt;&gt;();
+        params.forEach(p -&gt; {
+            if (p.getSearching()) {
+                if (p.getGeneric()) {
+                    String value = genericSpecs.get(p.getId().toString()).toString();
+                    if(p.getNumeric()){
+                        value = chooseSegment(value, p);
+                    }
+                    specMap.put(p.getName(), StringUtils.isBlank(value) ? "其它" : value);
+                } else {
+                    specMap.put(p.getName(), specialSpecs.get(p.getId().toString()));
+                }
+            }
+        });
+
+        goods.setId(spu.getId());
+        goods.setSubTitle(spu.getSubTitle());
+        goods.setBrandId(spu.getBrandId());
+        goods.setCid1(spu.getCid1());
+        goods.setCid2(spu.getCid2());
+        goods.setCid3(spu.getCid3());
+        goods.setCreateTime(spu.getCreateTime());
+        goods.setAll(spu.getTitle() + " " + StringUtils.join(names, " "));
+        goods.setPrice(prices);
+        goods.setSkus(mapper.writeValueAsString(skuList));
+        goods.setSpecs(specMap);
+        return goods;
+    }                                                   
+
+}</code></pre>
+<p>因为过滤参数中有一类比较特殊，就是数值区间：
+
+</p>
+<p><img src="assets/1526608095471.png" alt="1526608095471">
+
+</p>
+<p>所以我们在存入时要进行处理：
+
+</p>
+<pre><code class="lang-java">private String chooseSegment(String value, SpecParam p) {
+    double val = NumberUtils.toDouble(value);
+    String result = "其它";
+    // 保存数值段
+    for (String segment : p.getSegments().split(",")) {
+        String[] segs = segment.split("-");
+        // 获取数值范围
+        double begin = NumberUtils.toDouble(segs[0]);
+        double end = Double.MAX_VALUE;
+        if(segs.length == 2){
+            end = NumberUtils.toDouble(segs[1]);
+        }
+        // 判断是否在范围内
+        if(val &gt;= begin &amp;&amp; val &lt; end){
+            if(segs.length == 1){
+                result = segs[0] + p.getUnit() + "以上";
+            }else if(begin == 0){
+                result = segs[1] + p.getUnit() + "以下";
+            }else{
+                result = segment + p.getUnit();
+            }
+            break;
+        }
+    }
+    return result;
+}</code></pre>
+<p>然后编写一个测试类，循环查询Spu，然后调用IndexService中的方法，把SPU变为Goods，然后写入索引库：
+
+</p>
+<pre><code class="lang-java">@Test
+public void loadData(){
+    // 创建索引
+    this.elasticsearchTemplate.createIndex(Goods.class);
+    // 配置映射
+    this.elasticsearchTemplate.putMapping(Goods.class);
+    int page = 1;
+    int rows = 100;
+    int size = 0;
+    do {
+        // 查询分页数据
+        PageResult&lt;SpuBo&gt; result = this.goodsClient.querySpuByPage(page, rows, true, null);
+        List&lt;SpuBo&gt; spus = result.getItems();
+        size = spus.size();
+        // 创建Goods集合
+        List&lt;Goods&gt; goodsList = new ArrayList&lt;&gt;();
+        // 遍历spu
+        for (SpuBo spu : spus) {
+            try {
+                Goods goods = this.searchService.buildGoods(spu);
+                goodsList.add(goods);
+            } catch (Exception e) {
+                break;
+            }
+        }
+
+        this.goodsRepository.saveAll(goodsList);
+        page++;
+    } while (size == 100);
+}</code></pre>
+<p>通过kibana查询， 可以看到数据成功导入：
+
+</p>
+<p><img src="assets/1532228358310.png" alt="1532228358310">
+
+
+
+</p>
+<h1>2.实现基本搜索</h1>
+<h2>2.1.页面分析</h2>
+<h3>2.1.1.页面跳转</h3>
+<p>在首页的顶部，有一个输入框：
+
+</p>
+<p><img src="assets/1526629923970.png" alt="1526629923970">
+
+</p>
+<p>当我们输入任何文本，点击搜索，就会跳转到搜索页<code>search.html</code>了：
+
+</p>
+<p>并且将搜索关键字以请求参数携带过来：
+
+</p>
+<p><img src="assets/1532229236516.png" alt="1532229236516">
+
+
+
+</p>
+<p>我们打开<code>search.html</code>，在最下面会有提前定义好的Vue实例：
+
+</p>
+<pre><code class="lang-html">&lt;script type="text/javascript"&gt;
+    var vm = new Vue({
+        el: "#searchApp",
+        data: {
+        },
+        components:{
+            // 加载页面顶部组件
+            lyTop: () =&gt; import("./js/pages/top.js")
+        }
+    });
+&lt;/script&gt;</code></pre>
+<p>这个Vue实例中，通过import导入的方式，加载了另外一个js：top.js并作为一个局部组件。top其实是页面顶部导航组件，我们暂时不管
+
+</p>
+<h3>2.1.2.发起异步请求</h3>
+<p>要想在页面加载后，就展示出搜索结果。我们应该在页面加载时，获取地址栏请求参数，并发起异步请求，查询后台数据，然后在页面渲染。
+
+</p>
+<p>我们在data中定义一个对象，记录请求的参数：
+
+</p>
+<pre><code class="lang-js">data: {
+    search:{
+        key:"", // 搜索页面的关键字
+    }
+}</code></pre>
+<p>我们通过钩子函数created，在页面加载时获取请求参数，并记录下来。
+
+</p>
+<pre><code class="lang-js">created(){
+    // 判断是否有请求参数
+    if(!location.search){
+        return;
+    }
+    // 将请求参数转为对象
+    const search = ly.parse(location.search.substring(1));
+    // 记录在data的search对象中
+    this.search = search;
+
+    // 发起请求，根据条件搜索
+    this.loadData();
+}</code></pre>
+<p>然后发起请求，搜索数据。
+
+</p>
+<pre><code class="lang-js">methods: {
+    loadData(){
+        // ly.http.post("/search/page", ly.stringify(this.search)).then(resp=&gt;{
+        ly.http.post("/search/page", this.search).then(resp=&gt;{
+            console.log(resp);
+        });
+    }
+}</code></pre>
+<ul>
+<li>我们这里使用<code>ly</code>是common.js中定义的工具对象。</li>
+<li>这里使用的是post请求，这样可以携带更多参数，并且以json格式发送</li>
+</ul>
+<p>在leyou-gateway中，添加允许信任域名：
+
+</p>
+<p><img src="assets/1532233280898.png" alt="1532233280898">
+
+</p>
+<p>并添加网关映射：
+
+</p>
+<p><img src="assets/1532233247824.png" alt="1532233247824">
+
+
+
+</p>
+<p>刷新页面试试：
+
+</p>
+<p><img src="assets/1532233086523.png" alt="1532233086523">
+
+</p>
+<p>因为后台没有提供接口，所以无法访问。没关系，接下来我们实现后台接口
+
+
+
+</p>
+<h2>2.2.后台提供搜索接口</h2>
+<h3>2.2.1.controller</h3>
+<p>首先分析几个问题：
+
+</p>
+<ul>
+<li><p>请求方式：Post</p>
+</li>
+<li><p>请求路径：/search/page，不过前面的/search应该是网关的映射路径，因此真实映射路径page，代表分页查询</p>
+</li>
+<li><p>请求参数：json格式，目前只有一个属性：key-搜索关键字，但是搜索结果页一定是带有分页查询的，所以将来肯定会有page属性，因此我们可以用一个对象来接收请求的json数据：</p>
+<pre><code class="lang-java">public class SearchRequest {
+    private String key;// 搜索条件
+
+    private Integer page;// 当前页
+
+    private static final Integer DEFAULT_SIZE = 20;// 每页大小，不从页面接收，而是固定大小
+    private static final Integer DEFAULT_PAGE = 1;// 默认页
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public Integer getPage() {
+        if(page == null){
+            return DEFAULT_PAGE;
+        }
+        // 获取页码时做一些校验，不能小于1
+        return Math.max(DEFAULT_PAGE, page);
+    }
+
+    public void setPage(Integer page) {
+        this.page = page;
+    }
+
+    public Integer getSize() {
+        return DEFAULT_SIZE;
+    }
+}</code></pre>
+</li>
+<li><p>返回结果：作为分页结果，一般都两个属性：当前页数据、总条数信息，我们可以使用之前定义的PageResult类</p>
+</li>
+</ul>
+<p>代码：
+
+</p>
+<pre><code class="lang-java">@RestController
+@RequestMapping
+public class SearchController {
+
+    @Autowired
+    private SearchService searchService;
+
+    /**
+     * 搜索商品
+     *
+     * @param request
+     * @return
+     */
+    @PostMapping("page")
+    public ResponseEntity&lt;PageResult&lt;Goods&gt;&gt; search(@RequestBody SearchRequest request) {
+        PageResult&lt;Goods&gt; result = this.searchService.search(request);
+        if (result == null) {
+            return new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);
+        }
+        return ResponseEntity.ok(result);
+    }
+}</code></pre>
+<h3>2.2.2.service</h3>
+<pre><code class="lang-java">@Service
+public class SearchService {
+
+    @Autowired
+    private GoodsRepository goodsRepository;
+
+    public PageResult&lt;Goods&gt; search(SearchRequest request) {
+        String key = request.getKey();
+        // 判断是否有搜索条件，如果没有，直接返回null。不允许搜索全部商品
+        if (StringUtils.isBlank(key)) {
+            return null;
+        }
+
+        // 构建查询条件
+        NativeSearchQueryBuilder queryBuilder = new NativeSearchQueryBuilder();
+
+        // 1、对key进行全文检索查询
+        queryBuilder.withQuery(QueryBuilders.matchQuery("all", key).operator(Operator.AND));
+
+        // 2、通过sourceFilter设置返回的结果字段,我们只需要id、skus、subTitle
+        queryBuilder.withSourceFilter(new FetchSourceFilter(
+                new String[]{"id","skus","subTitle"}, null));
+
+        // 3、分页
+        // 准备分页参数
+        int page = request.getPage();
+        int size = request.getSize();
+        queryBuilder.withPageable(PageRequest.of(page - 1, size));
+
+        // 4、查询，获取结果
+        Page&lt;Goods&gt; pageInfo = this.goodsRepository.search(queryBuilder.build());
+
+        // 封装结果并返回
+        return new PageResult&lt;&gt;(goodsPage.getTotalElements(), goodsPage.getTotalPages(), goodsPage.getContent());
+    }
+}</code></pre>
+<p>注意点：我们要设置SourceFilter，来选择要返回的结果，否则返回一堆没用的数据，影响查询效率。
+
+</p>
+<h3>2.2.3.测试</h3>
+<p>刷新页面测试：
+
+</p>
+<p><img src="assets/1532237344249.png" alt="1532237344249">
+
+</p>
+<p><img src="assets/1532237401249.png" alt="1532237401249">
+
+</p>
+<p>数据是查到了，但是因为我们只查询部分字段，所以结果json 数据中有很多null，这很不优雅。
+
+
+
+</p>
+<p>解决办法很简单，在leyou-search的application.yml中添加一行配置，json处理时忽略空值：
+
+</p>
+<pre><code class="lang-yaml">spring:
+  jackson:
+    default-property-inclusion: non_null # 配置json处理时忽略空值</code></pre>
+<p>结果：
+
+</p>
+<p><img src="assets/1532237986819.png" alt="1532237986819">
+
+
+
+</p>
+<h2>2.3.页面渲染</h2>
+<p>页面已经拿到了结果，接下来就要渲染样式了。
+
+</p>
+<h3>2.3.1.保存搜索结果</h3>
+<p>首先，在data中定义属性，保存搜索的结果：
+
+</p>
+<p><img src="assets/1532239032197.png" alt="1532239032197">
+
+</p>
+<p>在<code>loadData</code>的异步查询中，将结果赋值给<code>goodsList</code>：
+
+</p>
+<p><img src="assets/1532239117076.png" alt="1532239117076">
+
+
+
+</p>
+<h3>2.3.2.循环展示商品</h3>
+<p>在search.html的中部，有一个<code>div</code>，用来展示所有搜索到的商品：
+
+</p>
+<p><img src="assets/1532238893722.png" alt="1532238893722">
+
+</p>
+<p>可以看到，<code>div</code>中有一个无序列表<code>ul</code>，内部的每一个<code>li</code>就是一个商品spu了。
+
+</p>
+<p>我们删除多余的，只保留一个<code>li</code>，然后利用vue的循环来展示搜索到的结果：
+
+</p>
+<p><img src="assets/1532239244410.png" alt="1532239244410">
+
+
+
+</p>
+<h3>2.3.3.多sku展示</h3>
+<h4>2.3.3.1.分析</h4>
+<p>接下来展示具体的商品信息，来看图：
+
+</p>
+<p> <img src="assets/1526607712207.png" alt="1526607712207">
+
+</p>
+<p>这里我们可以发现，一个商品位置，是多个sku的信息集合。<strong>当用户鼠标选择某个sku，对应的图片、价格、标题会随之改变！</strong>
+
+</p>
+<p>我们先来实现sku的选择，才能去展示不同sku的数据。
+
+</p>
+<p> <img src="assets/1526654252710.png" alt="1526654252710">
+
+</p>
+<p>可以看到，在列表中默认第一个是被选中的，那我们就需要做两件事情：
+
+</p>
+<ul>
+<li><p>在搜索到数据时，先默认把第一个sku作为被选中的，记录下来</p>
+</li>
+<li><p>记录当前被选中的是哪一个sku，记录在哪里比较合适呢？显然是遍历到的goods对象自己内部，因为每一个goods都会有自己的sku信息。</p>
+</li>
+</ul>
+<h4>2.3.3.2.初始化sku</h4>
+<p>查询出的结果集skus是一个json类型的字符串，不是js对象
+
+</p>
+<p><img src="assets/1532240220800.png" alt="1532240220800">
+
+</p>
+<p>我们在查询成功的回调函数中，对goods进行遍历，把skus转化成对象，并添加一个selected属性保存被选中的sku：
+
+</p>
+<p><img src="assets/1532240609206.png" alt="1532240609206">
+
+</p>
+<p><img src="assets/1532240586769.png" alt="1532240586769">
+
+
+
+</p>
+<h4>2.3.3.3.多sku图片列表</h4>
+<p>接下来，我们看看多个sku的图片列表位置：
+
+</p>
+<p><img src="assets/1532240706261.png" alt="1532240706261">
+
+</p>
+<p>看到又是一个无序列表，这里我们也一样删掉多余的，保留一个<code>li</code>，需要注意选中的项有一个样式类：selected
+
+</p>
+<p>我们的代码：
+
+</p>
+<pre><code class="lang-vue">&lt;!--多sku图片列表--&gt;
+&lt;ul class="skus"&gt;
+    &lt;li :class="{selected: sku.id == goods.selected.id}" v-for="sku in goods.skus" :key="sku.id"
+        @mouseEnter="goods.selected=sku"&gt;
+        &lt;img :src="sku.image"&gt;
+    &lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+<p>注意：
+
+</p>
+<ul>
+<li>class样式通过 goods.selected的id是否与当前sku的id一致来判断</li>
+<li>绑定了鼠标事件，鼠标进入后把当前sku赋值到goods.selected</li>
+</ul>
+<h3>2.3.4.展示sku其它属性</h3>
+<p>现在，我们已经可以通过<code>goods.selected获取</code>用户选中的sku，那么我们就可以在页面展示了：
+
+</p>
+<p><img src="assets/1526656197524.png" alt="1526656197524">
+
+
+
+</p>
+<p>刷新页面：
+
+</p>
+<p> <img src="assets/1526656243166.png" alt="1526656243166">
+
+</p>
+<p>看起来很完美是吧！
+
+</p>
+<p>但其实有一些瑕疵
+
+</p>
+<h3>2.3.5.几个问题</h3>
+<h4>2.3.5.1.价格显示的是分</h4>
+<p>首先价格显示就不正确，我们数据库中存放的是以分为单位，所以这里要格式化。
+
+</p>
+<p>好在我们之前common.js中定义了工具类，可以帮我们转换。
+
+</p>
+<p>改造：
+
+</p>
+<p><img src="assets/1532242831006.png" alt="1532242831006">
+
+</p>
+<p>结果报错：
+
+</p>
+<p><img src="assets/1532242950035.png" alt="1532242950035">
+
+</p>
+<p>为啥？
+
+</p>
+<p>因为在Vue范围内使用任何变量，都会默认去Vue实例中寻找，我们使用ly，但是Vue实例中没有这个变量。所以解决办法就是把ly记录到Vue实例：
+
+</p>
+<p><img src="assets/1532242983324.png" alt="1532242983324">
+
+</p>
+<p>然后刷新页面：
+
+</p>
+<p><img src="assets/1532243052100.png" alt="1532243052100">
+
+
+
+</p>
+<h4>2.3.5.2.标题过长</h4>
+<p>标题内容太长了，已经无法完全显示，怎么办？
+
+</p>
+<p>截取一下：
+
+</p>
+<p><img src="/assets/1526656959487.png" alt="1526656959487">
+
+</p>
+<p>最好在加个悬停展示所有内容的效果
+
+
+
+</p>
+<h4>2.3.5.3.sku点击不切换</h4>
+<p>还有一个错误比较隐蔽，不容易被发现。我们点击sku 的图片列表，发现没有任何变化。
+
+</p>
+<p>这不科学啊，为什么？
+
+</p>
+<p>通过控制台观察，发现数据其实是变化了，但是Vue却没有重新渲染视图。
+
+</p>
+<p>这是因为Vue的自动渲染是基于对象的属性变化的。比如页面使用GoodsList进行渲染，如果GoodsList变化，或者其内部的任何子对象变化，都会Vue感知，从而从新渲染页面。
+
+</p>
+<p>然而，这一切有一个前提，那就是当你第一次渲染时，对象中有哪些属性，Vue就只监视这些属性，后来添加的属性发生改变，是不会被监视到的。
+
+</p>
+<p>而我们的goods对象中，本身是没有selected属性的，是我们后来才添加进去的：
+
+</p>
+<p><img src="assets/1532243182104.png" alt="1532243182104">
+
+</p>
+<p>这段代码稍微改造一下，即可：
+
+</p>
+<p><img src="assets/1532243275078.png" alt="1532243275078">
+
+</p>
+<p>也就是说，我们先把selected属性初始化完毕，然后才把整个对象赋值给goodsList，这样，goodsList已初始化时就有selected属性，以后就会被正常监控了。
+
+</p>
+<p> <img src="assets/skus.gif" alt="">
+
+
+
+</p>
+<h1>3.页面分页效果</h1>
+<p>刚才的查询中，我们默认了查询的页码和每页大小，因此所有的分页功能都无法使用，接下来我们一起看看<code>分页功能条</code>该如何制作。
+
+</p>
+<p>这里要分两步，
+
+</p>
+<ul>
+<li>第一步：如何生成分页条</li>
+<li>第二步：点击分页按钮，我们做什么</li>
+</ul>
+<h2>3.1.如何生成分页条</h2>
+<p>先看下页面关于分页部分的代码：
+
+</p>
+<p> <img src="H:assets/1526692249371.png" alt="1526692249371">
+
+</p>
+<p>可以看到所有的分页栏内容都是写死的。
+
+</p>
+<h3>3.1.1.需要的数据</h3>
+<p>分页数据应该是根据<strong>总页数</strong>、<strong>当前页</strong>、<strong>总条数</strong>等信息来计算得出。
+
+</p>
+<ul>
+<li>当前页：肯定是由页面来决定的，点击按钮会切换到对应的页</li>
+<li>总页数：需要后台传递给我们</li>
+<li>总条数：需要后台传递给我们</li>
+</ul>
+<p>我们首先在data中记录下这几个值：page-当前页，total-总条数，totalPage-总页数
+
+</p>
+<pre><code class="lang-js">data: {
+    ly,
+    search:{
+        key: "",
+        page: 1
+    },
+    goodsList:[], // 接收搜索得到的结果
+    total: 0, // 总条数
+    totalPage: 0 // 总页数
+}</code></pre>
+<p>因为page是搜索条件之一，所以记录在search对象中。
+
+</p>
+<p>要注意：我们在created钩子函数中，会读取url路径的参数，然后赋值给search。如果是第一次请求页面，page是不存在的。因此为了避免page被覆盖，我们应该这么做：
+
+</p>
+<p><img src="assets/1532243978471.png" alt="1532243978471">
+
+</p>
+<p>不过，这个时候我们自己的search对象中的值就可有可无了
+
+
+
+</p>
+<h3>3.1.2.后台提供数据</h3>
+<p>后台返回的结果中，要包含total和totalPage，我们改造下刚才的接口：
+
+</p>
+<p>在我们返回的PageResult对象中，其实是有totalPage字段的：
+
+</p>
+<p>  <img src="assets/1526695144476.png" alt="1526695144476">
+
+</p>
+<p>我们在返回时，把这个值填上：
+
+</p>
+<p> <img src="/assets/1526695592422.png" alt="1526695592422">
+
+</p>
+<p>页面测试一下：
+
+</p>
+<p><img src="assets/1532244453375.png" alt="1532244453375">
+
+</p>
+<p>OK
+
+
+
+</p>
+<h3>3.1.3.页面计算分页条</h3>
+<p>首先，把后台提供的数据保存在data中：
+
+</p>
+<p> <img src="H:/%E4%B9%90%E4%BC%98/7%E6%9C%881%E5%8F%B7%E6%9B%B4%E6%96%B0/day12-%E5%9F%BA%E6%9C%AC%E6%90%9C%E7%B4%A2%E5%8A%9F%E8%83%BD/assets/1526695967230.png" alt="1526695967230">
+
+
+
+</p>
+<p>然后看下我们要实现的效果：
+
+</p>
+<p><img src="H:/%E4%B9%90%E4%BC%98/7%E6%9C%881%E5%8F%B7%E6%9B%B4%E6%96%B0/day12-%E5%9F%BA%E6%9C%AC%E6%90%9C%E7%B4%A2%E5%8A%9F%E8%83%BD/assets/1526695821870.png" alt="1526695821870">
+
+</p>
+<p>这里最复杂的是中间的1~5的分页按钮，它需要动态变化。
+
+</p>
+<p>思路分析：
+
+</p>
+<ul>
+<li>最多有5个按钮，因此我们可以用<code>v-for</code>循环从1到5即可</li>
+<li>但是分页条不一定是从1开始：<ul>
+<li>如果当前页值小于等于3的时候，分页条位置从1开始到5结束</li>
+<li>如果总页数小于等于5的时候，分页条位置从1开始到5结束</li>
+<li>如果当前页码大于3，应该从page-3开始</li>
+<li>但是如果当前页码大于totalPage-3，应该从totalPage-5开始</li>
+</ul>
+</li>
+</ul>
+<p>所以，我们的页面这样来做：
+
+</p>
+<p><img src="assets/1532246481241.png" alt="1532246481241">
+
+</p>
+<p>a标签中的分页数字通过<code>index</code>函数来计算，需要把<code>i</code>传递过去：
+
+</p>
+<pre><code class="lang-js">index(i){
+    if(this.search.page &lt;= 3 || this.totalPage &lt;= 5){
+        // 如果当前页小于等于3或者总页数小于等于5
+        return i;
+    } else if(this.search.page &gt; 3) {
+        // 如果当前页大于3
+        return this.search.page - 3 + i;
+    } else {
+        return this.totalPage - 5 + i;
+    }
+}</code></pre>
+<p>需要注意的是，如果总页数不足5页，我们就不应该遍历1~5，而是1~总页数，稍作改进：
+
+</p>
+<p><img src="assets/1526698842013.png" alt="1526698842013">
+
+</p>
+<p>分页条的其它部分就比较简单了：
+
+</p>
+<pre><code class="lang-vue">&lt;div class="sui-pagination pagination-large"&gt;
+    &lt;ul style="width: 550px"&gt;
+        &lt;li :class="{prev:true,disabled:search.page === 1}"&gt;
+            &lt;a href="#"&gt;«上一页&lt;/a&gt;
+        &lt;/li&gt;
+        &lt;li :class="{active: index(i) === search.page}" v-for="i in Math.min(5,totalPage)" :key="i"&gt;
+            &lt;a href="#"&gt;{{index(i)}}&lt;/a&gt;
+        &lt;/li&gt;
+        &lt;li class="dotted" v-show="totalPage &gt; 5"&gt;&lt;span&gt;...&lt;/span&gt;&lt;/li&gt;
+        &lt;li :class="{next:true,disabled:search.page === totalPage}"&gt;
+            &lt;a href="#"&gt;下一页»&lt;/a&gt;
+        &lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;div&gt;
+        &lt;span&gt;共{{totalPage}}页&amp;nbsp;&lt;/span&gt;
+        &lt;span&gt;
+            到第
+            &lt;input type="text" class="page-num" :value="search.page"&gt;
+            页 &lt;button class="page-confirm" onclick="alert(1)"&gt;确定&lt;/button&gt;
+        &lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<h2>3.2.点击分页做什么</h2>
+<p>点击分页按钮后，自然是要修改<code>page</code>的值
+
+</p>
+<p>所以，我们在<code>上一页</code>、<code>下一页</code>按钮添加点击事件，对page进行修改，在数字按钮上绑定点击事件，点击直接修改page：
+
+</p>
+<p><img src="assets/1532248549662.png" alt="1532248549662">
+
+
+
+
+
+
+
+</p>
+<pre><code class="lang-js">    prevPage(){
+        if(this.search.page &gt; 1){
+            this.search.page--
+        }
+    },
+    nextPage(){
+        if(this.search.page &lt; this.totalPage){
+            this.search.page++
+        }
+    }</code></pre>
+<p>当<code>page</code>发生变化，我们应该去后台重新查询数据。
+
+</p>
+<p>不过，如果我们直接发起ajax请求，那么浏览器的地址栏中是不会有变化的，没有记录下分页信息。如果用户刷新页面，那么就会回到第一页。
+
+</p>
+<p>这样不太友好，我们应该把<strong>搜索条件记录在地址栏的查询参数中</strong>。
+
+</p>
+<p>因此，我们监听search的变化，然后把search的过滤字段拼接在url路径后：
+
+</p>
+<pre><code class="lang-js">watch:{
+    search:{
+        deep:true,
+            handler(val){
+            // 把search对象变成请求参数，拼接在url路径
+            window.location.href = "http://www.leyou.com/search.html?" + ly.stringify(val);
+        }
+    }
+},</code></pre>
+<p>刷新页面测试，然后就出现重大bug：页面无限刷新！为什么？
+
+
+
+</p>
+<p>因为Vue实例初始化的钩子函数中，我们读取请求参数，赋值给search的时候，也触发了watch监视！也就是说，每次页面创建完成，都会触发watch，然后就会去修改window.location路径，然后页面被刷新，再次触发created钩子，又触发watch，周而复始，无限循环。
+
+
+
+</p>
+<p>所以，我们需要在watch中进行监控，如果发现是第一次初始化，则不继续向下执行。
+
+</p>
+<p>那么问题是，如何判断是不是第一次？
+
+</p>
+<p>第一次初始化时，search中的key值肯定是空的，所以，我们这么做：
+
+</p>
+<pre><code class="lang-js">watch:{
+    search:{
+        deep:true,
+            handler(val,old){
+            if(!old || !old.key){
+                // 如果旧的search值为空，或者search中的key为空，证明是第一次
+                return;
+            }
+            // 把search对象变成请求参数，拼接在url路径
+            window.location.href = "http://www.leyou.com/search.html?" + ly.stringify(val);
+        }
+    }
+}</code></pre>
+<p>再次刷新，OK了！
+
+
+
+</p>
+<h2>3.3.页面顶部分页条</h2>
+<p>在页面商品列表的顶部，也有一个分页条：
+
+</p>
+<p> <img src="assets/1526716212704.png" alt="1526716212704">
+
+</p>
+<p>我们把这一部分，也加上点击事件：
+
+</p>
+<p><img src="assets/1532248435097.png" alt="1532248435097">
+
+
+
+</p>
+<h1>4.排序(作业)</h1>
+<h2>4.1.页面搜索排序条件</h2>
+<p>在搜索商品列表的顶部，有这么一部分内容：
+
+</p>
+<p> <img src="assets/1526716565293.png" alt="1526716565293">
+
+</p>
+<p>这是用来做排序的，默认按照综合排序。点击新品，应该按照商品创建时间排序，点击价格应该按照价格排序。因为我们没有统计销量和评价，这里咱们以<code>新品</code>和<code>价格</code>为例，进行讲解，做法是想通的。
+
+</p>
+<p>排序需要知道两个内容：
+
+</p>
+<ul>
+<li>排序的字段</li>
+<li>排序的方式</li>
+</ul>
+<p>因此，我们首先在<code>search</code>中记录这两个信息，因为created钩子函数会对search进行覆盖，因此我们在钩子函数中对这两个信息进行初始化即可：
+
+</p>
+<p> <img src="assets/1526717586493.png" alt="1526717586493">
+
+</p>
+<p>然后，在页面上给按钮绑定点击事件，修改<code>sortBy</code>和<code>descending</code>的值：
+
+</p>
+<pre><code class="lang-vue">&lt;!--排序字段--&gt;
+&lt;ul class="sui-nav"&gt;
+    &lt;li :class="{active:!search.sortBy}" @click="search.sortBy=''"&gt;
+        &lt;a href="#"&gt;综合&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        &lt;a href="#"&gt;销量&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li @click="search.sortBy='createTime'" :class="{active: search.sortBy==='createTime'}"&gt;
+        &lt;a href="#"&gt;新品&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        &lt;a href="#"&gt;评价&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li @click="search.sortBy='price'; search.descending = !search.descending"
+        :class="{active: search.sortBy==='price'}"&gt;
+        &lt;a href="#"&gt;
+            价格
+            &lt;v-icon v-show="search.descending"&gt;arrow_drop_down&lt;/v-icon&gt;
+            &lt;v-icon v-show="!search.descending"&gt;arrow_drop_up&lt;/v-icon&gt;
+        &lt;/a&gt;
+    &lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+<p>可以看到，页面请求参数中已经有了排序字段了：
+
+</p>
+<p> <img src="assets/1526718252315.png" alt="1526718252315">
+
+
+
+</p>
+<h2>4.2.后台添加排序逻辑</h2>
+<p>接下来，后台需要接收请求参数中的排序信息，然后在搜索中加入排序的逻辑。
+
+</p>
+<p>现在，我们的请求参数对象<code>SearchRequest</code>中，只有page、key两个字段。需要进行扩展：
+
+</p>
+<p> <img src="assets/1526718448918.png" alt="1526718448918">
+
+
+
+</p>
+<p>然后在搜索业务逻辑中，添加排序条件：
+
+</p>
+<p><img src="assets/1526718637618.png" alt="1526718637618">
+
+
+
+</p>
+<p>注意，因为我们存储在索引库中的的价格是一个数组，因此在按照价格排序时，会进行智能处理：
+
+</p>
+<ul>
+<li>如果是价格降序，则会把数组中的最大值拿来排序</li>
+<li>如果是价格升序，则会把数组中的最小值拿来排序</li>
+</ul>
+<p><img src="assets/1526719415219.png" alt="1526719415219">
+
+
+
+
+</p>
+<p>Edit By <a href="http://mahua.jser.me">MaHua</a></p>
+</body></html>
